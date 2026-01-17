@@ -3,201 +3,227 @@ import 'package:http/http.dart' as http;
 import '../models/news_article.dart';
 
 class FakeNewsDetectorService {
-  // Using OpenRouter API with Google's Gemini model for real AI analysis
-  static const String _apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+  static const String _baseUrl = 'https://openrouter.ai/api/v1/chat/completions';
   static const String _model = 'google/gemini-2.0-flash-exp:free';
   
-  // You'll need to add your OpenRouter API key here
-  // Get one free at: https://openrouter.ai/
   String? _apiKey;
 
   void setApiKey(String key) {
     _apiKey = key;
   }
 
-  Future<VerificationResult> analyzeNews(String title, String content, {String? imageUrl}) async {
-    if (_apiKey == null || _apiKey!.isEmpty) {
-      // Fallback to local analysis if no API key
-      return _analyzeLocally(title, content);
+  bool get hasApiKey => _apiKey != null && _apiKey!.isNotEmpty;
+
+  Future<VerificationResult> analyzeNews(
+    String title,
+    String content, {
+    String? url,
+    String? imageUrl,
+  }) async {
+    if (!hasApiKey) {
+      return _fallbackAnalysis(title, content);
     }
 
     try {
-      final messages = [
-        {
-          'role': 'user',
-          'content': _buildPrompt(title, content, imageUrl),
-        }
-      ];
-
-      final response = await http.post(
-        Uri.parse(_apiUrl),
-        headers: {
-          'Authorization': 'Bearer $_apiKey',
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://github.com/ashu13579/fake-news-detector-flutter',
-        },
-        body: jsonEncode({
-          'model': _model,
-          'messages': messages,
-          'temperature': 0.3,
-          'max_tokens': 1000,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final aiResponse = data['choices'][0]['message']['content'];
-        return _parseAIResponse(aiResponse);
-      } else {
-        // Fallback to local analysis on API error
-        return _analyzeLocally(title, content);
-      }
+      final prompt = _buildPrompt(title, content, url, imageUrl);
+      final response = await _callOpenRouterAPI(prompt);
+      return _parseAIResponse(response);
     } catch (e) {
-      // Fallback to local analysis on error
-      return _analyzeLocally(title, content);
+      print('AI Analysis failed: $e');
+      return _fallbackAnalysis(title, content);
     }
   }
 
-  String _buildPrompt(String title, String content, String? imageUrl) {
-    String prompt = '''You are an expert fact-checker and misinformation analyst. Analyze the following news article for authenticity.
+  String _buildPrompt(String title, String content, String? url, String? imageUrl) {
+    return '''You are an expert fact-checker and misinformation analyst. Analyze this news article with EXTREME SCRUTINY for fake news indicators.
 
-Title: $title
+CRITICAL ANALYSIS GUIDELINES:
+- Be HIGHLY SUSPICIOUS of sensational claims without credible sources
+- MAJOR RED FLAG: Claims about disasters, deaths, or shocking events without named sources
+- MAJOR RED FLAG: Vague phrases like "more than X died" without specific attribution
+- MAJOR RED FLAG: Emotional manipulation or fear-mongering language
+- MAJOR RED FLAG: Lack of verifiable sources, dates, or official statements
+- MAJOR RED FLAG: Clickbait headlines that don't match content
+- Look for: Who, What, When, Where, Why with SPECIFIC details
+- Verify: Are there named officials, organizations, or credible news outlets cited?
+- Check: Does the article provide verifiable facts or just claims?
 
-Content: $content
-''';
+ARTICLE TO ANALYZE:
+Title: "$title"
+Content: "$content"
+${url != null ? 'Source URL: $url' : ''}
+${imageUrl != null ? 'Image URL: $imageUrl' : ''}
 
-    if (imageUrl != null) {
-      prompt += '\nImage URL: $imageUrl\n(Consider if the image context matches the article content)';
-    }
-
-    prompt += '''
-
-Provide your analysis in the following JSON format:
+RESPOND IN THIS EXACT JSON FORMAT (no markdown, no code blocks, just raw JSON):
 {
   "isFake": true/false,
   "confidence": 0.0-1.0,
-  "reasoning": "detailed explanation",
-  "redFlags": ["flag1", "flag2", ...],
-  "sources": ["source1", "source2", ...]
+  "reasoning": "Detailed explanation of your analysis focusing on credibility indicators",
+  "redFlags": ["specific issue 1", "specific issue 2", ...],
+  "sources": ["credible source 1", "credible source 2", ...] or ["No credible sources identified"]
 }
 
-Analyze based on:
-1. Sensational or clickbait language
-2. Lack of credible sources
-3. Emotional manipulation
-4. Factual inconsistencies
-5. Writing quality and professionalism
-6. Image-text consistency (if image provided)
+IMPORTANT RULES:
+1. If there are NO named sources, officials, or organizations → HIGH chance of fake news
+2. If claims are vague or unverifiable → Mark as suspicious
+3. If emotional/sensational language without facts → RED FLAG
+4. If no specific dates, locations, or verifiable details → RED FLAG
+5. Confidence should be HIGH (>0.80) when multiple red flags present
+6. Be STRICT - better to flag suspicious content than miss fake news
 
-Be thorough and objective.''';
+Analyze now and respond ONLY with the JSON object:''';
+  }
 
-    return prompt;
+  Future<String> _callOpenRouterAPI(String prompt) async {
+    final response = await http.post(
+      Uri.parse(_baseUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_apiKey',
+        'HTTP-Referer': 'https://github.com/ashu13579/fake-news-detector-flutter',
+        'X-Title': 'Fake News Detector',
+      },
+      body: jsonEncode({
+        'model': _model,
+        'messages': [
+          {
+            'role': 'user',
+            'content': prompt,
+          }
+        ],
+        'temperature': 0.3, // Lower temperature for more consistent analysis
+        'max_tokens': 1000,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('API Error: ${response.statusCode} - ${response.body}');
+    }
+
+    final data = jsonDecode(response.body);
+    final content = data['choices'][0]['message']['content'];
+    return content;
   }
 
   VerificationResult _parseAIResponse(String response) {
     try {
-      // Extract JSON from response (AI might add extra text)
-      final jsonStart = response.indexOf('{');
-      final jsonEnd = response.lastIndexOf('}') + 1;
-      
-      if (jsonStart != -1 && jsonEnd > jsonStart) {
-        final jsonStr = response.substring(jsonStart, jsonEnd);
-        final data = jsonDecode(jsonStr);
-        
-        return VerificationResult(
-          isFake: data['isFake'] ?? false,
-          confidence: (data['confidence'] ?? 0.5).toDouble(),
-          reasoning: data['reasoning'] ?? 'Analysis completed',
-          redFlags: List<String>.from(data['redFlags'] ?? []),
-          sources: List<String>.from(data['sources'] ?? []),
-        );
+      // Clean the response - remove markdown code blocks if present
+      String cleanedResponse = response.trim();
+      if (cleanedResponse.startsWith('```json')) {
+        cleanedResponse = cleanedResponse.substring(7);
       }
+      if (cleanedResponse.startsWith('```')) {
+        cleanedResponse = cleanedResponse.substring(3);
+      }
+      if (cleanedResponse.endsWith('```')) {
+        cleanedResponse = cleanedResponse.substring(0, cleanedResponse.length - 3);
+      }
+      cleanedResponse = cleanedResponse.trim();
+
+      final json = jsonDecode(cleanedResponse);
+      
+      return VerificationResult(
+        isFake: json['isFake'] ?? false,
+        confidence: (json['confidence'] ?? 0.5).toDouble(),
+        reasoning: json['reasoning'] ?? 'Analysis completed',
+        redFlags: List<String>.from(json['redFlags'] ?? []),
+        sources: List<String>.from(json['sources'] ?? ['No sources identified']),
+      );
     } catch (e) {
-      // If parsing fails, return a default result
+      print('Failed to parse AI response: $e');
+      print('Response was: $response');
+      // Return a cautious result if parsing fails
+      return VerificationResult(
+        isFake: true,
+        confidence: 0.6,
+        reasoning: 'Unable to complete full analysis. Please verify with trusted sources.',
+        redFlags: ['Analysis parsing error - manual verification recommended'],
+        sources: ['No sources identified'],
+      );
     }
-    
-    return VerificationResult(
-      isFake: false,
-      confidence: 0.5,
-      reasoning: 'Unable to parse AI response. Please try again.',
-      redFlags: ['Analysis error'],
-      sources: [],
-    );
   }
 
-  // Fallback local analysis (original logic)
-  Future<VerificationResult> _analyzeLocally(String title, String content) async {
-    await Future.delayed(const Duration(seconds: 2));
-    
+  VerificationResult _fallbackAnalysis(String title, String content) {
     final combinedText = '$title $content'.toLowerCase();
     final redFlags = <String>[];
-    final sources = <String>[];
-    
+    int suspicionScore = 0;
+
     // Check for sensational language
     final sensationalWords = [
-      'shocking', 'unbelievable', 'miracle', 'secret', 'they don\'t want you to know',
-      'breaking', 'urgent', 'must see', 'you won\'t believe', 'doctors hate'
+      'shocking', 'unbelievable', 'you won\'t believe',
+      'breaking', 'urgent', 'alert', 'warning',
+      'miracle', 'secret', 'exposed', 'revealed'
     ];
     
-    for (var word in sensationalWords) {
+    for (final word in sensationalWords) {
       if (combinedText.contains(word)) {
-        redFlags.add('Contains sensational language: "$word"');
+        redFlags.add('Sensational language detected: "$word"');
+        suspicionScore += 15;
       }
     }
 
-    // Check for all caps
-    if (title == title.toUpperCase() && title.length > 10) {
-      redFlags.add('Title is in ALL CAPS (common clickbait tactic)');
+    // Check for lack of sources
+    final sourceIndicators = [
+      'according to', 'reported by', 'study shows',
+      'research', 'official', 'spokesperson'
+    ];
+    
+    bool hasSources = false;
+    for (final indicator in sourceIndicators) {
+      if (combinedText.contains(indicator)) {
+        hasSources = true;
+        break;
+      }
+    }
+    
+    if (!hasSources) {
+      redFlags.add('No credible sources cited');
+      suspicionScore += 25;
     }
 
     // Check for excessive punctuation
-    if (title.contains('!!!') || title.contains('???')) {
-      redFlags.add('Excessive punctuation in title');
+    if (RegExp(r'[!?]{2,}').hasMatch(combinedText)) {
+      redFlags.add('Excessive punctuation detected');
+      suspicionScore += 10;
     }
 
-    // Check for sources
-    final hasSourceIndicators = combinedText.contains('according to') ||
-        combinedText.contains('study shows') ||
-        combinedText.contains('research') ||
-        combinedText.contains('expert');
-    
-    if (!hasSourceIndicators && content.length > 100) {
-      redFlags.add('No clear sources or citations mentioned');
+    // Check for all caps
+    if (RegExp(r'[A-Z]{5,}').hasMatch(title)) {
+      redFlags.add('Excessive capitalization in title');
+      suspicionScore += 10;
     }
 
     // Check for emotional manipulation
-    final emotionalWords = ['outrage', 'scandal', 'conspiracy', 'cover-up', 'exposed'];
-    for (var word in emotionalWords) {
+    final emotionalWords = [
+      'outrage', 'fury', 'panic', 'fear', 'terror',
+      'disaster', 'catastrophe', 'crisis'
+    ];
+    
+    for (final word in emotionalWords) {
       if (combinedText.contains(word)) {
-        redFlags.add('Uses emotional manipulation: "$word"');
+        redFlags.add('Emotional manipulation detected');
+        suspicionScore += 10;
+        break;
       }
     }
 
-    if (hasSourceIndicators) {
-      sources.addAll(['Reuters', 'Associated Press', 'BBC News']);
-    }
-
-    final fakeScore = (redFlags.length * 0.2).clamp(0.0, 0.95);
-    final isFake = fakeScore > 0.5;
-    final confidence = isFake ? fakeScore : (1 - fakeScore);
-
-    String reasoning;
-    if (isFake) {
-      reasoning = 'This article shows ${redFlags.length} indicators commonly associated with fake news. '
-          'It uses sensational language, lacks credible sources, and may be designed to manipulate emotions. '
-          'Please verify this information with trusted news sources before sharing.';
-    } else {
-      reasoning = 'This article appears to be legitimate based on our analysis. '
-          'It uses measured language, cites sources, and follows journalistic standards. '
-          'However, always cross-reference important information with multiple trusted sources.';
-    }
+    // Calculate confidence and verdict
+    final confidence = (suspicionScore / 100).clamp(0.0, 1.0);
+    final isFake = suspicionScore >= 40;
 
     return VerificationResult(
       isFake: isFake,
       confidence: confidence,
-      reasoning: reasoning,
+      reasoning: isFake
+          ? 'This article shows multiple indicators of potential misinformation. '
+              'It lacks credible sources and uses sensational language. '
+              'Please verify with trusted news sources.'
+          : 'This article appears to follow journalistic standards with proper sourcing. '
+              'However, always cross-reference important information with multiple trusted sources.',
       redFlags: redFlags.isEmpty ? ['No major red flags detected'] : redFlags,
-      sources: sources.isEmpty ? ['No sources identified'] : sources,
+      sources: hasSources
+          ? ['Article cites sources']
+          : ['No sources identified'],
     );
   }
 }
