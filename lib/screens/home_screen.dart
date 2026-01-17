@@ -19,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -32,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         child: SafeArea(
+          bottom: false, // Don't apply safe area to bottom
           child: Column(
             children: [
               _buildAppBar(),
@@ -128,14 +130,22 @@ class _HomeScreenState extends State<HomeScreen> {
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.15),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
         ],
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
       ),
       child: SafeArea(
-        child: Padding(
+        top: false,
+        child: Container(
+          height: 70,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -169,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: () => setState(() => _currentIndex = index),
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: isSelected
                 ? Theme.of(context).colorScheme.primaryContainer
@@ -178,13 +188,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
                 color: isSelected
                     ? Theme.of(context).colorScheme.primary
                     : Theme.of(context).colorScheme.onSurfaceVariant,
-                size: 28,
+                size: 26,
               ),
               const SizedBox(height: 4),
               Text(
