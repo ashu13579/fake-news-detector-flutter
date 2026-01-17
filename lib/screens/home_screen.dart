@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
 import '../widgets/news_input_form.dart';
 import '../widgets/analysis_history.dart';
 import '../widgets/settings_sheet.dart';
+import '../providers/news_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -47,6 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAppBar() {
+    final newsProvider = Provider.of<NewsProvider>(context, listen: false);
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
@@ -106,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
-                builder: (context) => const SettingsSheet(),
+                builder: (context) => SettingsSheet(newsProvider: newsProvider),
               );
             },
             style: IconButton.styleFrom(
