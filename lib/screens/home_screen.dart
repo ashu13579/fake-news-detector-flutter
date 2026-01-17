@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../widgets/news_input_form.dart';
-import '../widgets/analysis_history.dart';
+import '../widgets/analysis_result_card.dart';
 import '../widgets/settings_sheet.dart';
 import '../providers/news_provider.dart';
 
@@ -14,10 +14,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
-
   @override
   Widget build(BuildContext context) {
+    final newsProvider = Provider.of<NewsProvider>(context);
+
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Container(
@@ -33,26 +33,35 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         child: SafeArea(
-          bottom: false,
           child: Column(
             children: [
-              _buildAppBar(),
+              _buildAppBar(newsProvider),
               Expanded(
-                child: _currentIndex == 0
-                    ? const NewsInputForm()
-                    : const AnalysisHistory(),
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      const NewsInputForm(),
+                      
+                      // Show result inline if analysis is complete
+                      if (newsProvider.analyses.isNotEmpty && !newsProvider.isLoading)
+                        AnalysisResultCard(
+                          analysis: newsProvider.analyses.first,
+                          onClose: () {
+                            // Optional: Clear the result or navigate
+                          },
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
-  Widget _buildAppBar() {
-    final newsProvider = Provider.of<NewsProvider>(context, listen: false);
-    
+  Widget _buildAppBar(NewsProvider newsProvider) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -124,95 +133,5 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2, end: 0);
-  }
-
-  Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
-          ),
-        ],
-        border: Border(
-          top: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
-            width: 1,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(
-                icon: Icons.search_rounded,
-                label: 'Analyze',
-                index: 0,
-              ),
-              _buildNavItem(
-                icon: Icons.history_rounded,
-                label: 'History',
-                index: 1,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required int index,
-  }) {
-    final isSelected = _currentIndex == index;
-    
-    return Expanded(
-      child: InkWell(
-        onTap: () => setState(() => _currentIndex = index),
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primaryContainer
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                size: 24,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ).animate(target: isSelected ? 1 : 0).scale(duration: 200.ms),
-    );
   }
 }
