@@ -66,41 +66,46 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
     final newsProvider = Provider.of<NewsProvider>(context);
 
     return SingleChildScrollView(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 80),
       child: Column(
         children: [
           // Hero Section
           Container(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
             child: Column(
               children: [
                 Icon(
                   Icons.shield_outlined,
-                  size: 64,
+                  size: 56,
                   color: Theme.of(context).colorScheme.primary,
                 ).animate().scale(delay: 100.ms, duration: 600.ms),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 Text(
                   'TruthLens',
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                 ).animate().fadeIn(delay: 200.ms),
-                const SizedBox(height: 12),
-                Text(
-                  'AI-powered fake news detection. Verify articles, images, and links instantly with advanced machine learning analysis.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    'AI-powered fake news detection. Verify articles, images, and links instantly with advanced machine learning analysis.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
                 ).animate().fadeIn(delay: 300.ms),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                const SizedBox(height: 16),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    _buildFeatureChip('Real-time Analysis', Icons.speed),
-                    const SizedBox(width: 12),
-                    _buildFeatureChip('Multi-format Support', Icons.dashboard),
+                    _buildFeatureChip('Real-time', Icons.speed),
+                    _buildFeatureChip('Multi-format', Icons.dashboard),
                   ],
                 ).animate().fadeIn(delay: 400.ms),
               ],
@@ -109,7 +114,7 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
 
           // Tab Selector
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
+            margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
@@ -124,78 +129,76 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
               labelColor: Theme.of(context).colorScheme.onPrimary,
               unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
               dividerColor: Colors.transparent,
+              labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              unselectedLabelStyle: const TextStyle(fontSize: 11),
               tabs: const [
                 Tab(
-                  icon: Icon(Icons.text_fields),
+                  icon: Icon(Icons.text_fields, size: 20),
                   text: 'Text',
                 ),
                 Tab(
-                  icon: Icon(Icons.link),
+                  icon: Icon(Icons.link, size: 20),
                   text: 'URL / Link',
                 ),
                 Tab(
-                  icon: Icon(Icons.image),
+                  icon: Icon(Icons.image, size: 20),
                   text: 'Image',
                 ),
               ],
             ),
           ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1, end: 0),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Tab Content
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Form(
               key: _formKey,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (_currentTab == 0) _buildTextTab(),
-                  if (_currentTab == 1) _buildUrlTab(),
-                  if (_currentTab == 2) _buildImageTab(),
-                  
-                  const SizedBox(height: 32),
+                  // Tab Views
+                  ..._buildTabContent(),
+
+                  const SizedBox(height: 20),
 
                   // Analyze Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: newsProvider.isLoading
-                          ? null
-                          : () => _analyzeNews(newsProvider),
-                      icon: newsProvider.isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.search_rounded),
-                      label: Text(
-                        newsProvider.isLoading ? 'Analyzing...' : 'Analyze ${_getTabName()}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.all(20),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                  FilledButton.icon(
+                    onPressed: newsProvider.isLoading
+                        ? null
+                        : () => _analyzeNews(newsProvider),
+                    icon: newsProvider.isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.search_rounded),
+                    label: Text(
+                      newsProvider.isLoading
+                          ? 'Analyzing...'
+                          : 'Analyze ${_getTabName()}',
+                    ),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                  ).animate().fadeIn(delay: 700.ms).shimmer(delay: 700.ms, duration: 1500.ms),
+                  ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.1, end: 0),
 
+                  // Error Message
                   if (newsProvider.error != null) ...[
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
@@ -217,7 +220,7 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
                     ).animate().shake(),
                   ],
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -229,22 +232,22 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
 
   Widget _buildFeatureChip(String label, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 6),
+          Icon(icon, size: 14, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onPrimaryContainer,
               fontWeight: FontWeight.w600,
-              fontSize: 12,
+              fontSize: 11,
             ),
           ),
         ],
@@ -252,244 +255,183 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
     );
   }
 
-  Widget _buildTextTab() {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Paste the news article or text you want to verify...',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Article Title',
-                  hintText: 'Enter the headline',
-                  prefixIcon: Icon(Icons.title_rounded),
-                ),
-                maxLines: 2,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _contentController,
-                decoration: const InputDecoration(
-                  labelText: 'Article Content',
-                  hintText: 'Paste the full article text here...',
-                  prefixIcon: Icon(Icons.article_rounded),
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 8,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter article content';
-                  }
-                  if (value.length < 50) {
-                    return 'Content too short (min 50 chars)';
-                  }
-                  return null;
-                },
-              ),
-            ],
-          ),
-        ).animate().fadeIn(delay: 600.ms).slideX(begin: -0.1, end: 0),
-      ],
-    );
+  List<Widget> _buildTabContent() {
+    switch (_currentTab) {
+      case 0:
+        return _buildTextTab();
+      case 1:
+        return _buildUrlTab();
+      case 2:
+        return _buildImageTab();
+      default:
+        return [];
+    }
   }
 
-  Widget _buildUrlTab() {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+  List<Widget> _buildTextTab() {
+    return [
+      Text(
+        'Enter the article text you want to verify...',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Enter the URL of the article you want to verify...',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _urlController,
-                decoration: const InputDecoration(
-                  labelText: 'Article URL',
-                  hintText: 'https://example.com/article',
-                  prefixIcon: Icon(Icons.link_rounded),
-                ),
-                keyboardType: TextInputType.url,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a URL';
-                  }
-                  if (!value.startsWith('http')) {
-                    return 'Please enter a valid URL';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Article Title (Optional)',
-                  hintText: 'Enter the headline',
-                  prefixIcon: Icon(Icons.title_rounded),
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _contentController,
-                decoration: const InputDecoration(
-                  labelText: 'Article Content (Optional)',
-                  hintText: 'Paste article text for better analysis...',
-                  prefixIcon: Icon(Icons.article_rounded),
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 6,
-              ),
-            ],
-          ),
-        ).animate().fadeIn(delay: 600.ms).slideX(begin: -0.1, end: 0),
-      ],
-    );
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _titleController,
+        decoration: const InputDecoration(
+          labelText: 'Article Title',
+          hintText: 'Enter the headline or title',
+          prefixIcon: Icon(Icons.title_rounded),
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter a title';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _contentController,
+        decoration: const InputDecoration(
+          labelText: 'Article Content',
+          hintText: 'Paste the full article text here',
+          prefixIcon: Icon(Icons.article_rounded),
+          alignLabelWithHint: true,
+        ),
+        maxLines: 8,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter the article content';
+          }
+          return null;
+        },
+      ),
+    ];
   }
 
-  Widget _buildImageTab() {
-    return Column(
-      children: [
+  List<Widget> _buildUrlTab() {
+    return [
+      Text(
+        'Enter the URL of the article you want to verify...',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _urlController,
+        decoration: const InputDecoration(
+          labelText: 'Article URL',
+          hintText: 'https://example.com/article',
+          prefixIcon: Icon(Icons.link_rounded),
+        ),
+        keyboardType: TextInputType.url,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter a URL';
+          }
+          if (!value.startsWith('http://') && !value.startsWith('https://')) {
+            return 'Please enter a valid URL';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _titleController,
+        decoration: const InputDecoration(
+          labelText: 'Article Title (Optional)',
+          hintText: 'Enter title if known',
+          prefixIcon: Icon(Icons.title_rounded),
+        ),
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _contentController,
+        decoration: const InputDecoration(
+          labelText: 'Article Content (Optional)',
+          hintText: 'Paste article text if available',
+          prefixIcon: Icon(Icons.article_rounded),
+          alignLabelWithHint: true,
+        ),
+        maxLines: 6,
+      ),
+    ];
+  }
+
+  List<Widget> _buildImageTab() {
+    return [
+      Text(
+        'Upload an image or provide an image URL...',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+      ),
+      const SizedBox(height: 16),
+      if (_selectedImage != null)
         Container(
-          padding: const EdgeInsets.all(24),
+          height: 200,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(16),
+            image: DecorationImage(
+              image: FileImage(File(_selectedImage!.path)),
+              fit: BoxFit.cover,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (_selectedImage != null) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(
-                    File(_selectedImage!.path),
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.tonalIcon(
-                        onPressed: _pickImage,
-                        icon: const Icon(Icons.swap_horiz),
-                        label: const Text('Change Image'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton.tonalIcon(
-                      onPressed: () {
-                        setState(() {
-                          _selectedImage = null;
-                        });
-                      },
-                      icon: const Icon(Icons.close),
-                      label: const Text('Remove'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                        foregroundColor: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _pickImage,
-                    icon: const Icon(Icons.upload_file, size: 32),
-                    label: const Text('Upload Image'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.all(32),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: Theme.of(context).colorScheme.outline)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'OR',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    Expanded(child: Divider(color: Theme.of(context).colorScheme.outline)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _imageUrlController,
-                  decoration: const InputDecoration(
-                    labelText: 'Image URL',
-                    hintText: 'https://example.com/image.jpg',
-                    prefixIcon: Icon(Icons.link),
-                  ),
-                  keyboardType: TextInputType.url,
-                ),
-              ],
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Context/Title (Optional)',
-                  hintText: 'Provide context about the image',
-                  prefixIcon: Icon(Icons.title_rounded),
-                ),
-                maxLines: 2,
-              ),
-            ],
+        )
+      else
+        OutlinedButton.icon(
+          onPressed: _pickImage,
+          icon: const Icon(Icons.upload_file_rounded),
+          label: const Text('Upload Image'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
-        ).animate().fadeIn(delay: 600.ms).slideX(begin: -0.1, end: 0),
-      ],
-    );
+        ),
+      const SizedBox(height: 16),
+      Row(
+        children: [
+          Expanded(child: Divider(color: Theme.of(context).colorScheme.outline)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              'OR',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          Expanded(child: Divider(color: Theme.of(context).colorScheme.outline)),
+        ],
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _imageUrlController,
+        decoration: const InputDecoration(
+          labelText: 'Image URL',
+          hintText: 'https://example.com/image.jpg',
+          prefixIcon: Icon(Icons.link),
+        ),
+        keyboardType: TextInputType.url,
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _titleController,
+        decoration: const InputDecoration(
+          labelText: 'Context/Title (Optional)',
+          hintText: 'Provide context about the image',
+          prefixIcon: Icon(Icons.title_rounded),
+        ),
+        maxLines: 2,
+      ),
+    ];
   }
 
   String _getTabName() {
@@ -544,7 +486,7 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 12),
-                Text('Analysis complete! Check the History tab.'),
+                Expanded(child: Text('Analysis complete! Check History tab.')),
               ],
             ),
             behavior: SnackBarBehavior.floating,
