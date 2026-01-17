@@ -8,12 +8,20 @@ class NewsProvider with ChangeNotifier {
   List<NewsArticle> _articles = [];
   bool _isLoading = false;
   String? _error;
+  String? _apiKey;
 
   List<NewsArticle> get articles => _articles;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get hasApiKey => _apiKey != null && _apiKey!.isNotEmpty;
 
-  Future<void> analyzeNews(String title, String content, {String? url}) async {
+  void setApiKey(String key) {
+    _apiKey = key;
+    _detectorService.setApiKey(key);
+    notifyListeners();
+  }
+
+  Future<void> analyzeNews(String title, String content, {String? url, String? imageUrl}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -23,10 +31,11 @@ class NewsProvider with ChangeNotifier {
         title: title,
         content: content,
         url: url,
+        imageUrl: imageUrl,
         timestamp: DateTime.now(),
       );
 
-      final result = await _detectorService.analyzeNews(title, content);
+      final result = await _detectorService.analyzeNews(title, content, imageUrl: imageUrl);
       
       final verifiedArticle = article.copyWith(verificationResult: result);
       _articles.insert(0, verifiedArticle);
