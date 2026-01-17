@@ -43,9 +43,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       const NewsInputForm(),
                       
                       // Show result inline if analysis is complete
-                      if (newsProvider.analyses.isNotEmpty && !newsProvider.isLoading)
+                      if (newsProvider.articles.isNotEmpty && !newsProvider.isLoading)
                         AnalysisResultCard(
-                          analysis: newsProvider.analyses.first,
+                          article: newsProvider.articles.first,
                           onClose: () {
                             // Optional: Clear the result or navigate
                           },
