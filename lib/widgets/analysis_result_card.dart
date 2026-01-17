@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../models/news_analysis.dart';
+import '../models/news_article.dart';
 
 class AnalysisResultCard extends StatefulWidget {
-  final NewsAnalysis analysis;
+  final NewsArticle article;
   final VoidCallback onClose;
 
   const AnalysisResultCard({
     super.key,
-    required this.analysis,
+    required this.article,
     required this.onClose,
   });
 
@@ -19,8 +19,14 @@ class AnalysisResultCard extends StatefulWidget {
 class _AnalysisResultCardState extends State<AnalysisResultCard> {
   bool _showDetails = false;
 
+  VerificationResult? get result => widget.article.verificationResult;
+
   @override
   Widget build(BuildContext context) {
+    if (result == null) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -64,7 +70,7 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
                             ),
                       ),
                       Text(
-                        'Confidence: ${(widget.analysis.confidence * 100).toStringAsFixed(0)}%',
+                        'Confidence: ${(result!.confidence * 100).toStringAsFixed(0)}%',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: _getIconColor().withOpacity(0.8),
                             ),
@@ -79,7 +85,7 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
                     shape: BoxShape.circle,
                   ),
                   child: Text(
-                    '${(widget.analysis.confidence * 100).toStringAsFixed(0)}%',
+                    '${(result!.confidence * 100).toStringAsFixed(0)}%',
                     style: TextStyle(
                       color: _getIconColor(),
                       fontWeight: FontWeight.bold,
@@ -102,7 +108,7 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: LinearProgressIndicator(
-                value: widget.analysis.confidence,
+                value: result!.confidence,
                 minHeight: 8,
                 backgroundColor: Colors.white.withOpacity(0.3),
                 valueColor: AlwaysStoppedAnimation<Color>(_getIconColor()),
@@ -116,7 +122,7 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              widget.analysis.analysis,
+              result!.reasoning,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Colors.white,
                     height: 1.5,
@@ -127,7 +133,7 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
           const SizedBox(height: 16),
 
           // Red flags section
-          if (widget.analysis.redFlags.isNotEmpty) ...[
+          if (result!.redFlags.isNotEmpty) ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -149,7 +155,7 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
               ),
             ),
             const SizedBox(height: 12),
-            ...widget.analysis.redFlags.map((flag) => Padding(
+            ...result!.redFlags.map((flag) => Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,12 +223,16 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDetailRow('Title', widget.analysis.title),
+                  _buildDetailRow('Title', widget.article.title),
                   const SizedBox(height: 12),
-                  _buildDetailRow('Analyzed', _formatDate(widget.analysis.timestamp)),
-                  if (widget.analysis.url != null) ...[
+                  _buildDetailRow('Analyzed', _formatDate(widget.article.timestamp)),
+                  if (widget.article.url != null) ...[
                     const SizedBox(height: 12),
-                    _buildDetailRow('Source URL', widget.analysis.url!),
+                    _buildDetailRow('Source URL', widget.article.url!),
+                  ],
+                  if (result!.sources.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildDetailRow('Sources', result!.sources.join(', ')),
                   ],
                 ],
               ),
@@ -256,9 +266,9 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
   }
 
   Color _getBackgroundColor() {
-    if (widget.analysis.isFake) {
+    if (result!.isFake) {
       return const Color(0xFF8B2635); // Dark red
-    } else if (widget.analysis.confidence < 0.7) {
+    } else if (result!.confidence < 0.7) {
       return const Color(0xFF8B6F2B); // Dark orange/yellow
     } else {
       return const Color(0xFF2B5F3F); // Dark green
@@ -266,9 +276,9 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
   }
 
   Color _getBorderColor() {
-    if (widget.analysis.isFake) {
+    if (result!.isFake) {
       return Colors.red.shade400;
-    } else if (widget.analysis.confidence < 0.7) {
+    } else if (result!.confidence < 0.7) {
       return Colors.orange.shade400;
     } else {
       return Colors.green.shade400;
@@ -276,9 +286,9 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
   }
 
   Color _getIconColor() {
-    if (widget.analysis.isFake) {
+    if (result!.isFake) {
       return Colors.red.shade300;
-    } else if (widget.analysis.confidence < 0.7) {
+    } else if (result!.confidence < 0.7) {
       return Colors.orange.shade300;
     } else {
       return Colors.green.shade300;
@@ -286,9 +296,9 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
   }
 
   IconData _getIcon() {
-    if (widget.analysis.isFake) {
+    if (result!.isFake) {
       return Icons.cancel_rounded;
-    } else if (widget.analysis.confidence < 0.7) {
+    } else if (result!.confidence < 0.7) {
       return Icons.warning_rounded;
     } else {
       return Icons.check_circle_rounded;
@@ -296,9 +306,9 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
   }
 
   String _getVerdict() {
-    if (widget.analysis.isFake) {
+    if (result!.isFake) {
       return 'Fake News';
-    } else if (widget.analysis.confidence < 0.7) {
+    } else if (result!.confidence < 0.7) {
       return 'Uncertain';
     } else {
       return 'Likely Real';
