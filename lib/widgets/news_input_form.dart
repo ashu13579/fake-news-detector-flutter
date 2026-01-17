@@ -65,168 +65,165 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
   Widget build(BuildContext context) {
     final newsProvider = Provider.of<NewsProvider>(context);
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 80),
-      child: Column(
-        children: [
-          // Hero Section
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.shield_outlined,
-                  size: 56,
-                  color: Theme.of(context).colorScheme.primary,
-                ).animate().scale(delay: 100.ms, duration: 600.ms),
-                const SizedBox(height: 12),
-                Text(
-                  'TruthLens',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                ).animate().fadeIn(delay: 200.ms),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    'AI-powered fake news detection. Verify articles, images, and links instantly with advanced machine learning analysis.',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                ).animate().fadeIn(delay: 300.ms),
-                const SizedBox(height: 16),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _buildFeatureChip('Real-time', Icons.speed),
-                    _buildFeatureChip('Multi-format', Icons.dashboard),
-                  ],
-                ).animate().fadeIn(delay: 400.ms),
-              ],
-            ),
-          ),
-
-          // Tab Selector
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
+    return Column(
+      children: [
+        // Hero Section
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+          child: Column(
+            children: [
+              Icon(
+                Icons.shield_outlined,
+                size: 56,
                 color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(12),
+              ).animate().scale(delay: 100.ms, duration: 600.ms),
+              const SizedBox(height: 12),
+              Text(
+                'TruthLens',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+              ).animate().fadeIn(delay: 200.ms),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  'AI-powered fake news detection. Verify articles, images, and links instantly with advanced machine learning analysis.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ).animate().fadeIn(delay: 300.ms),
+              const SizedBox(height: 16),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildFeatureChip('Real-time', Icons.speed),
+                  _buildFeatureChip('Multi-format', Icons.dashboard),
+                ],
+              ).animate().fadeIn(delay: 400.ms),
+            ],
+          ),
+        ),
+
+        // Tab Selector
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            indicator: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            labelColor: Theme.of(context).colorScheme.onPrimary,
+            unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+            dividerColor: Colors.transparent,
+            labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+            unselectedLabelStyle: const TextStyle(fontSize: 11),
+            tabs: const [
+              Tab(
+                icon: Icon(Icons.text_fields, size: 20),
+                text: 'Text',
               ),
-              labelColor: Theme.of(context).colorScheme.onPrimary,
-              unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
-              dividerColor: Colors.transparent,
-              labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-              unselectedLabelStyle: const TextStyle(fontSize: 11),
-              tabs: const [
-                Tab(
-                  icon: Icon(Icons.text_fields, size: 20),
-                  text: 'Text',
-                ),
-                Tab(
-                  icon: Icon(Icons.link, size: 20),
-                  text: 'URL / Link',
-                ),
-                Tab(
-                  icon: Icon(Icons.image, size: 20),
-                  text: 'Image',
-                ),
+              Tab(
+                icon: Icon(Icons.link, size: 20),
+                text: 'URL / Link',
+              ),
+              Tab(
+                icon: Icon(Icons.image, size: 20),
+                text: 'Image',
+              ),
+            ],
+          ),
+        ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1, end: 0),
+
+        const SizedBox(height: 20),
+
+        // Tab Content
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Tab Views
+                ..._buildTabContent(),
+
+                const SizedBox(height: 20),
+
+                // Analyze Button
+                FilledButton.icon(
+                  onPressed: newsProvider.isLoading
+                      ? null
+                      : () => _analyzeNews(newsProvider),
+                  icon: newsProvider.isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.search_rounded),
+                  label: Text(
+                    newsProvider.isLoading
+                        ? 'Analyzing...'
+                        : 'Analyze ${_getTabName()}',
+                  ),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.1, end: 0),
+
+                // Error Message
+                if (newsProvider.error != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline_rounded,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            newsProvider.error!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onErrorContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().shake(),
+                ],
+
+                const SizedBox(height: 20),
               ],
             ),
-          ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1, end: 0),
-
-          const SizedBox(height: 20),
-
-          // Tab Content
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Tab Views
-                  ..._buildTabContent(),
-
-                  const SizedBox(height: 20),
-
-                  // Analyze Button
-                  FilledButton.icon(
-                    onPressed: newsProvider.isLoading
-                        ? null
-                        : () => _analyzeNews(newsProvider),
-                    icon: newsProvider.isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.search_rounded),
-                    label: Text(
-                      newsProvider.isLoading
-                          ? 'Analyzing...'
-                          : 'Analyze ${_getTabName()}',
-                    ),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.1, end: 0),
-
-                  // Error Message
-                  if (newsProvider.error != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.error_outline_rounded,
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              newsProvider.error!,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onErrorContainer,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ).animate().shake(),
-                  ],
-
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -480,29 +477,23 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
       );
 
       if (mounted && newsProvider.error == null) {
+        // Don't clear form - keep it visible above results
+        // Scroll to show results
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 12),
-                Expanded(child: Text('Analysis complete! Check History tab.')),
+                Expanded(child: Text('Analysis complete! See results below.')),
               ],
             ),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Theme.of(context).colorScheme.primary,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 2),
           ),
         );
-        
-        // Clear form
-        _titleController.clear();
-        _contentController.clear();
-        _urlController.clear();
-        _imageUrlController.clear();
-        setState(() {
-          _selectedImage = null;
-        });
       }
     }
   }
