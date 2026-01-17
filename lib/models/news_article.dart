@@ -2,6 +2,7 @@ class NewsArticle {
   final String title;
   final String content;
   final String? url;
+  final String? imageUrl;
   final DateTime timestamp;
   final VerificationResult? verificationResult;
 
@@ -9,6 +10,7 @@ class NewsArticle {
     required this.title,
     required this.content,
     this.url,
+    this.imageUrl,
     required this.timestamp,
     this.verificationResult,
   });
@@ -17,6 +19,7 @@ class NewsArticle {
     String? title,
     String? content,
     String? url,
+    String? imageUrl,
     DateTime? timestamp,
     VerificationResult? verificationResult,
   }) {
@@ -24,6 +27,7 @@ class NewsArticle {
       title: title ?? this.title,
       content: content ?? this.content,
       url: url ?? this.url,
+      imageUrl: imageUrl ?? this.imageUrl,
       timestamp: timestamp ?? this.timestamp,
       verificationResult: verificationResult ?? this.verificationResult,
     );
@@ -34,6 +38,7 @@ class NewsArticle {
       'title': title,
       'content': content,
       'url': url,
+      'imageUrl': imageUrl,
       'timestamp': timestamp.toIso8601String(),
       'verificationResult': verificationResult?.toJson(),
     };
@@ -44,6 +49,7 @@ class NewsArticle {
       title: json['title'],
       content: json['content'],
       url: json['url'],
+      imageUrl: json['imageUrl'],
       timestamp: DateTime.parse(json['timestamp']),
       verificationResult: json['verificationResult'] != null
           ? VerificationResult.fromJson(json['verificationResult'])
