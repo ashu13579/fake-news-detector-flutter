@@ -4,7 +4,9 @@ import '../models/news_article.dart';
 
 class FakeNewsDetectorService {
   // Using Google AI Studio API directly - more reliable and free
-  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+  // Model name must be exact - using gemini-1.5-flash-latest for stability
+  static const String _model = 'gemini-1.5-flash-latest';
+  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
   
   String? _apiKey;
 
@@ -80,7 +82,7 @@ Analyze now and respond ONLY with the JSON object:''';
   }
 
   Future<String> _callGeminiAPI(String prompt) async {
-    final url = '$_baseUrl?key=$_apiKey';
+    final url = '$_baseUrl/$_model:generateContent?key=$_apiKey';
     
     final response = await http.post(
       Uri.parse(url),
