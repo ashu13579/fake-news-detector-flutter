@@ -14,15 +14,36 @@ class ResultCard extends StatelessWidget {
     required this.onDelete,
   });
 
+  Color _getVerdictColor(BuildContext context, NewsVerdict verdict) {
+    switch (verdict) {
+      case NewsVerdict.fake:
+        return Theme.of(context).colorScheme.error;
+      case NewsVerdict.real:
+        return Theme.of(context).colorScheme.primary;
+      case NewsVerdict.uncertain:
+        return Colors.orange;
+    }
+  }
+
+  IconData _getVerdictIcon(NewsVerdict verdict) {
+    switch (verdict) {
+      case NewsVerdict.fake:
+        return Icons.warning_rounded;
+      case NewsVerdict.real:
+        return Icons.verified_rounded;
+      case NewsVerdict.uncertain:
+        return Icons.help_outline_rounded;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final result = article.verificationResult;
     if (result == null) return const SizedBox.shrink();
 
-    final isFake = result.isFake;
-    final color = isFake
-        ? Theme.of(context).colorScheme.error
-        : Theme.of(context).colorScheme.primary;
+    final verdict = result.verdict;
+    final color = _getVerdictColor(context, verdict);
+    final icon = _getVerdictIcon(verdict);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -77,7 +98,7 @@ class ResultCard extends StatelessWidget {
                         ],
                       ),
                       child: Icon(
-                        isFake ? Icons.warning_rounded : Icons.verified_rounded,
+                        icon,
                         color: Colors.white,
                         size: 28,
                       ),
@@ -88,7 +109,7 @@ class ResultCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            isFake ? 'Likely Fake News' : 'Appears Legitimate',
+                            result.verdictLabel,
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   color: color,
                                   fontWeight: FontWeight.bold,
@@ -100,7 +121,7 @@ class ResultCard extends StatelessWidget {
                               Icon(Icons.analytics_rounded, size: 16, color: color),
                               const SizedBox(width: 4),
                               Text(
-                                '${(result.confidence * 100).toStringAsFixed(0)}% confidence',
+                                'Confidence: ${(result.confidence * 100).toStringAsFixed(0)}%',
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                       color: color,
                                       fontWeight: FontWeight.w600,
@@ -255,7 +276,7 @@ class ResultCard extends StatelessWidget {
                     ),
                     
                     // Red flags
-                    if (result.redFlags.isNotEmpty) ...[
+                    if (result.redFlags.isNotEmpty && result.redFlags.first != 'No major red flags detected') ...[
                       const SizedBox(height: 20),
                       Row(
                         children: [
@@ -307,7 +328,7 @@ class ResultCard extends StatelessWidget {
                     ],
                     
                     // Sources
-                    if (result.sources.isNotEmpty && result.sources.first != 'No sources identified') ...[
+                    if (result.sources.isNotEmpty && result.sources.first != 'No sources identified' && result.sources.first != 'No credible sources identified') ...[
                       const SizedBox(height: 20),
                       Row(
                         children: [
