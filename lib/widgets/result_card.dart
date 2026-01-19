@@ -4,7 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/news_article.dart';
 
-class ResultCard extends StatelessWidget {
+class ResultCard extends StatefulWidget {
   final NewsArticle article;
   final VoidCallback onDelete;
 
@@ -13,6 +13,13 @@ class ResultCard extends StatelessWidget {
     required this.article,
     required this.onDelete,
   });
+
+  @override
+  State<ResultCard> createState() => _ResultCardState();
+}
+
+class _ResultCardState extends State<ResultCard> {
+  bool _showDetailedAnalysis = false;
 
   Color _getVerdictColor(BuildContext context, NewsVerdict verdict) {
     switch (verdict) {
@@ -28,9 +35,9 @@ class ResultCard extends StatelessWidget {
   IconData _getVerdictIcon(NewsVerdict verdict) {
     switch (verdict) {
       case NewsVerdict.fake:
-        return Icons.warning_rounded;
+        return Icons.cancel_rounded;
       case NewsVerdict.real:
-        return Icons.verified_rounded;
+        return Icons.check_circle_rounded;
       case NewsVerdict.uncertain:
         return Icons.help_outline_rounded;
     }
@@ -38,7 +45,7 @@ class ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final result = article.verificationResult;
+    final result = widget.article.verificationResult;
     if (result == null) return const SizedBox.shrink();
 
     final verdict = result.verdict;
@@ -121,7 +128,7 @@ class ResultCard extends StatelessWidget {
                               Icon(Icons.analytics_rounded, size: 16, color: color),
                               const SizedBox(width: 4),
                               Text(
-                                'Confidence: ${(result.confidence * 100).toStringAsFixed(0)}%',
+                                '${(result.confidence * 100).toStringAsFixed(0)}% confidence',
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                       color: color,
                                       fontWeight: FontWeight.w600,
@@ -132,15 +139,45 @@ class ResultCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${(result.confidence * 100).toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(Icons.delete_outline_rounded),
-                      onPressed: onDelete,
+                      onPressed: widget.onDelete,
                       style: IconButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.errorContainer,
                         foregroundColor: Theme.of(context).colorScheme.error,
                       ),
                     ),
                   ],
+                ),
+              ),
+
+              // Confidence bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: result.confidence,
+                    minHeight: 8,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
                 ),
               ),
               
@@ -151,11 +188,11 @@ class ResultCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Image if available
-                    if (article.imageUrl != null) ...[
+                    if (widget.article.imageUrl != null) ...[
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
                         child: CachedNetworkImage(
-                          imageUrl: article.imageUrl!,
+                          imageUrl: widget.article.imageUrl!,
                           height: 200,
                           width: double.infinity,
                           fit: BoxFit.cover,
@@ -179,23 +216,23 @@ class ResultCard extends StatelessWidget {
                     ],
 
                     Text(
-                      article.title,
+                      widget.article.title,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      article.content.length > 200
-                          ? '${article.content.substring(0, 200)}...'
-                          : article.content,
+                      widget.article.content.length > 200
+                          ? '${widget.article.content.substring(0, 200)}...'
+                          : widget.article.content,
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                     
-                    if (article.url != null) ...[
+                    if (widget.article.url != null) ...[
                       const SizedBox(height: 12),
                       InkWell(
-                        onTap: () => _launchUrl(article.url!),
+                        onTap: () => _launchUrl(widget.article.url!),
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
                           padding: const EdgeInsets.all(12),
@@ -213,7 +250,7 @@ class ResultCard extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  article.url!,
+                                  widget.article.url!,
                                   style: TextStyle(
                                     color: Theme.of(context).colorScheme.primary,
                                     fontWeight: FontWeight.w600,
@@ -235,7 +272,7 @@ class ResultCard extends StatelessWidget {
                     
                     const SizedBox(height: 20),
                     
-                    // Reasoning
+                    // Summary or Reasoning
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -268,7 +305,7 @@ class ResultCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            result.reasoning,
+                            result.summary ?? result.reasoning,
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ],
@@ -377,6 +414,134 @@ class ResultCard extends StatelessWidget {
                             )).toList(),
                       ),
                     ],
+
+                    // Expand button for detailed analysis
+                    if (result.detailedAnalysis != null || (result.recommendations != null && result.recommendations!.isNotEmpty)) ...[
+                      const SizedBox(height: 20),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _showDetailedAnalysis = !_showDetailedAnalysis;
+                          });
+                        },
+                        icon: Icon(
+                          _showDetailedAnalysis ? Icons.expand_less : Icons.expand_more,
+                        ),
+                        label: Text(
+                          _showDetailedAnalysis ? 'Hide detailed analysis' : 'View detailed analysis',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    // Detailed Analysis (expandable)
+                    if (_showDetailedAnalysis) ...[
+                      const SizedBox(height: 20),
+                      
+                      // Detailed breakdown
+                      if (result.detailedAnalysis != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildAnalysisItem(
+                                context,
+                                'Source Credibility',
+                                result.detailedAnalysis!.sourceCredibility,
+                              ),
+                              const Divider(height: 24),
+                              _buildAnalysisItem(
+                                context,
+                                'Language Quality',
+                                result.detailedAnalysis!.languageQuality,
+                              ),
+                              const Divider(height: 24),
+                              _buildAnalysisItem(
+                                context,
+                                'Factual Consistency',
+                                result.detailedAnalysis!.factualConsistency,
+                              ),
+                              const Divider(height: 24),
+                              _buildAnalysisItem(
+                                context,
+                                'Bias Indicators',
+                                result.detailedAnalysis!.biasIndicators,
+                              ),
+                              const Divider(height: 24),
+                              _buildAnalysisItem(
+                                context,
+                                'Verification Status',
+                                result.detailedAnalysis!.verificationStatus,
+                              ),
+                            ],
+                          ),
+                        ).animate().fadeIn().slideY(begin: -0.1, end: 0),
+                      ],
+
+                      // Recommendations
+                      if (result.recommendations != null && result.recommendations!.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.lightbulb_outline_rounded,
+                                    size: 20,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Recommendations',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              ...result.recommendations!.map((rec) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Icon(
+                                          Icons.arrow_forward_rounded,
+                                          size: 16,
+                                          color: Theme.of(context).colorScheme.primary,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            rec,
+                                            style: Theme.of(context).textTheme.bodyMedium,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )),
+                            ],
+                          ),
+                        ).animate().fadeIn().slideY(begin: -0.1, end: 0),
+                      ],
+                    ],
                     
                     const SizedBox(height: 16),
                     Row(
@@ -388,7 +553,7 @@ class ResultCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Analyzed ${_formatDate(article.timestamp)}',
+                          'Analyzed ${_formatDate(widget.article.timestamp)}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Theme.of(context).colorScheme.outline,
                               ),
@@ -403,6 +568,27 @@ class ResultCard extends StatelessWidget {
         ),
       ),
     ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+  }
+
+  Widget _buildAnalysisItem(BuildContext context, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      ],
+    );
   }
 
   String _formatDate(DateTime date) {
