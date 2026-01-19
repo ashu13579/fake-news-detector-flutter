@@ -7,6 +7,7 @@ class FakeNewsDetectorService {
   // Using gemini-2.5-flash (current stable model as of Jan 2026)
   // 1.5 models were retired in 2025, 2.5 is the current series
   // Free tier: 15 RPM, 1000 RPD, 1M token context
+  // Supports multimodal input (text + images)
   static const String _model = 'gemini-2.5-flash';
   static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
   
@@ -30,7 +31,7 @@ class FakeNewsDetectorService {
 
     try {
       final prompt = _buildPrompt(title, content, url, imageUrl);
-      final response = await _callGeminiAPI(prompt);
+      final response = await _callGeminiAPI(prompt, imageUrl: imageUrl);
       return _parseAIResponse(response);
     } catch (e) {
       print('AI Analysis failed: $e');
@@ -41,7 +42,16 @@ class FakeNewsDetectorService {
   String _buildPrompt(String title, String content, String? url, String? imageUrl) {
     final combinedContent = '$title\n\n$content';
     
-    return '''You are an expert fact-checker and fake news detection AI. Your task is to analyze the provided content and determine if it is likely to be real news or fake news.
+    String imageContext = '';
+    if (imageUrl != null) {
+      if (imageUrl.startsWith('data:image')) {
+        imageContext = '\n\nIMAGE PROVIDED: A local image has been uploaded for analysis. Please analyze the image for signs of manipulation, deepfakes, misleading context, or fake news indicators.';
+      } else {
+        imageContext = '\n\nImage URL: $imageUrl\nPlease consider the image in your analysis if it provides relevant context.';
+      }
+    }
+    
+    return '''You are an expert fact-checker and fake news detection AI with image analysis capabilities. Your task is to analyze the provided content (text and/or images) and determine if it is likely to be real news or fake news.
 
 Analyze based on these criteria:
 1. Source credibility - Does the content come from or cite reputable sources?
@@ -49,11 +59,11 @@ Analyze based on these criteria:
 3. Factual consistency - Are there logical inconsistencies or implausible claims?
 4. Bias indicators - Is there obvious political or ideological bias?
 5. Verification signals - Are there verifiable facts, dates, names, and places?
+${imageUrl != null ? '6. Image analysis - Check for signs of manipulation, deepfakes, misleading context, or visual misinformation' : ''}
 
 CONTENT TO ANALYZE:
 $combinedContent
-${url != null ? '\nSource URL: $url' : ''}
-${imageUrl != null ? '\nImage URL: $imageUrl' : ''}
+${url != null ? '\nSource URL: $url' : ''}$imageContext
 
 You MUST respond with ONLY a valid JSON object in this exact format (no markdown, no code blocks):
 {
@@ -79,19 +89,44 @@ IMPORTANT GUIDELINES:
 - Be thorough but concise in your analysis
 - List specific red flags if found
 - Provide actionable recommendations
+${imageUrl != null ? '- If analyzing an image, check for visual manipulation, deepfakes, misleading captions, or out-of-context usage' : ''}
 
 Analyze now and respond ONLY with the JSON object:''';
   }
 
-  Future<String> _callGeminiAPI(String prompt) async {
+  Future<String> _callGeminiAPI(String prompt, {String? imageUrl}) async {
     final url = '$_baseUrl/$_model:generateContent?key=$_apiKey';
     
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
+    // Build the request body with multimodal support
+    Map<String, dynamic> requestBody;
+    
+    if (imageUrl != null && imageUrl.startsWith('data:image')) {
+      // Extract base64 data from data URL
+      final base64Data = imageUrl.split(',')[1];
+      final mimeType = imageUrl.split(';')[0].split(':')[1]; // e.g., "image/jpeg"
+      
+      requestBody = {
+        'contents': [
+          {
+            'parts': [
+              {'text': prompt},
+              {
+                'inline_data': {
+                  'mime_type': mimeType,
+                  'data': base64Data,
+                }
+              }
+            ]
+          }
+        ],
+        'generationConfig': {
+          'temperature': 0.3,
+          'maxOutputTokens': 2048,
+        }
+      };
+    } else {
+      // Text-only request
+      requestBody = {
         'contents': [
           {
             'parts': [
@@ -103,7 +138,15 @@ Analyze now and respond ONLY with the JSON object:''';
           'temperature': 0.3,
           'maxOutputTokens': 2048,
         }
-      }),
+      };
+    }
+    
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(requestBody),
     );
 
     if (response.statusCode != 200) {
