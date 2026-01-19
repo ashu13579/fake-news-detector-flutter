@@ -114,7 +114,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Add your Google AI Studio API key to enable AI-powered analysis with Gemini 1.5 Flash.',
+              'Add your Google AI Studio API key to enable AI-powered analysis with Gemini 2.5 Flash.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -196,8 +196,9 @@ class _SettingsSheetState extends State<SettingsSheet> {
                   _buildStep('1', 'Visit aistudio.google.com/app/apikey'),
                   _buildStep('2', 'Sign in with Google account'),
                   _buildStep('3', 'Click "Create API Key"'),
-                  _buildStep('4', 'Copy the key (starts with AIzaSy)'),
-                  _buildStep('5', 'Paste it here and save'),
+                  _buildStep('4', 'Select "Create API key in new project"'),
+                  _buildStep('5', 'Copy the key (starts with AIzaSy)'),
+                  _buildStep('6', 'Paste it here and save'),
                 ],
               ),
             ),
@@ -228,10 +229,50 @@ class _SettingsSheetState extends State<SettingsSheet> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _buildBenefit('✓', '1,500 requests per day'),
+                  _buildBenefit('✓', '1,000 requests per day'),
+                  _buildBenefit('✓', '15 requests per minute'),
                   _buildBenefit('✓', 'No credit card required'),
-                  _buildBenefit('✓', 'Latest Gemini 1.5 Flash model'),
+                  _buildBenefit('✓', 'Latest Gemini 2.5 Flash model'),
                   _buildBenefit('✓', 'Fast and reliable'),
+                  _buildBenefit('✓', '1M token context window'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.error.withOpacity(0.3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Theme.of(context).colorScheme.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Important Notes:',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildWarning('• Use Gemini 2.5 models (1.5 retired)'),
+                  _buildWarning('• Quota resets at midnight PT'),
+                  _buildWarning('• Create new project if quota exceeded'),
+                  _buildWarning('• Keep your API key secure'),
                 ],
               ),
             ),
@@ -297,6 +338,19 @@ class _SettingsSheetState extends State<SettingsSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildWarning(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 13,
+          color: Theme.of(context).colorScheme.error,
+        ),
       ),
     );
   }
