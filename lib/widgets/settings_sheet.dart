@@ -107,14 +107,14 @@ class _SettingsSheetState extends State<SettingsSheet> {
             ),
             const SizedBox(height: 24),
             Text(
-              'OpenRouter API Key',
+              'Google AI Studio API Key',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Add your OpenRouter API key to enable AI-powered analysis with Google Gemini.',
+              'Add your Google AI Studio API key to enable AI-powered analysis with Gemini 1.5 Flash.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -125,7 +125,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
               obscureText: _obscureKey,
               decoration: InputDecoration(
                 labelText: 'API Key',
-                hintText: 'sk-or-v1-...',
+                hintText: 'AIzaSy...',
                 prefixIcon: const Icon(Icons.key),
                 suffixIcon: IconButton(
                   icon: Icon(_obscureKey ? Icons.visibility : Icons.visibility_off),
@@ -160,7 +160,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                 ),
                 const SizedBox(width: 12),
                 FilledButton.tonalIcon(
-                  onPressed: () => _launchUrl('https://openrouter.ai/keys'),
+                  onPressed: () => _launchUrl('https://aistudio.google.com/app/apikey'),
                   icon: const Icon(Icons.open_in_new),
                   label: const Text('Get Key'),
                 ),
@@ -193,11 +193,45 @@ class _SettingsSheetState extends State<SettingsSheet> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _buildStep('1', 'Visit openrouter.ai'),
-                  _buildStep('2', 'Sign up or log in'),
-                  _buildStep('3', 'Go to Keys section'),
-                  _buildStep('4', 'Create a new API key'),
-                  _buildStep('5', 'Copy and paste it here'),
+                  _buildStep('1', 'Visit aistudio.google.com/app/apikey'),
+                  _buildStep('2', 'Sign in with Google account'),
+                  _buildStep('3', 'Click "Create API Key"'),
+                  _buildStep('4', 'Copy the key (starts with AIzaSy)'),
+                  _buildStep('5', 'Paste it here and save'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.tertiaryContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Theme.of(context).colorScheme.tertiary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Free Tier Benefits:',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildBenefit('✓', '1,500 requests per day'),
+                  _buildBenefit('✓', 'No credit card required'),
+                  _buildBenefit('✓', 'Latest Gemini 1.5 Flash model'),
+                  _buildBenefit('✓', 'Fast and reliable'),
                 ],
               ),
             ),
@@ -231,7 +265,37 @@ class _SettingsSheetState extends State<SettingsSheet> {
             ),
           ),
           const SizedBox(width: 12),
-          Text(text),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBenefit(String icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Text(
+            icon,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.tertiary,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
         ],
       ),
     );
