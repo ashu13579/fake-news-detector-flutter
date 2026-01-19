@@ -4,7 +4,8 @@ import '../models/news_article.dart';
 
 class FakeNewsDetectorService {
   static const String _baseUrl = 'https://openrouter.ai/api/v1/chat/completions';
-  static const String _model = 'google/gemini-2.0-flash-exp:free';
+  // Using Meta Llama 3.1 8B (free) - more stable than Gemini free tier
+  static const String _model = 'meta-llama/llama-3.1-8b-instruct:free';
   
   String? _apiKey;
 
