@@ -35,41 +35,46 @@ class FakeNewsDetectorService {
   }
 
   String _buildPrompt(String title, String content, String? url, String? imageUrl) {
-    return '''You are an expert fact-checker and misinformation analyst. Analyze this news article with EXTREME SCRUTINY for fake news indicators.
+    final combinedContent = '$title\n\n$content';
+    
+    return '''You are an expert fact-checker and fake news detection AI. Your task is to analyze the provided content and determine if it is likely to be real news or fake news.
 
-CRITICAL ANALYSIS GUIDELINES:
-- Be HIGHLY SUSPICIOUS of sensational claims without credible sources
-- MAJOR RED FLAG: Claims about disasters, deaths, or shocking events without named sources
-- MAJOR RED FLAG: Vague phrases like "more than X died" without specific attribution
-- MAJOR RED FLAG: Emotional manipulation or fear-mongering language
-- MAJOR RED FLAG: Lack of verifiable sources, dates, or official statements
-- MAJOR RED FLAG: Clickbait headlines that don't match content
-- Look for: Who, What, When, Where, Why with SPECIFIC details
-- Verify: Are there named officials, organizations, or credible news outlets cited?
-- Check: Does the article provide verifiable facts or just claims?
+Analyze based on these criteria:
+1. Source credibility - Does the content come from or cite reputable sources?
+2. Language analysis - Check for sensationalist language, excessive capitalization, or emotional manipulation
+3. Factual consistency - Are there logical inconsistencies or implausible claims?
+4. Bias indicators - Is there obvious political or ideological bias?
+5. Verification signals - Are there verifiable facts, dates, names, and places?
 
-ARTICLE TO ANALYZE:
-Title: "$title"
-Content: "$content"
-${url != null ? 'Source URL: $url' : ''}
-${imageUrl != null ? 'Image URL: $imageUrl' : ''}
+CONTENT TO ANALYZE:
+$combinedContent
+${url != null ? '\nSource URL: $url' : ''}
+${imageUrl != null ? '\nImage URL: $imageUrl' : ''}
 
-RESPOND IN THIS EXACT JSON FORMAT (no markdown, no code blocks, just raw JSON):
+You MUST respond with ONLY a valid JSON object in this exact format (no markdown, no code blocks):
 {
-  "isFake": true/false,
-  "confidence": 0.0-1.0,
-  "reasoning": "Detailed explanation of your analysis focusing on credibility indicators",
-  "redFlags": ["specific issue 1", "specific issue 2", ...],
-  "sources": ["credible source 1", "credible source 2", ...] or ["No credible sources identified"]
+  "verdict": "REAL" or "FAKE" or "UNCERTAIN",
+  "confidence": number between 0 and 100,
+  "analysis": {
+    "sourceCredibility": "brief assessment",
+    "languageQuality": "brief assessment",
+    "factualConsistency": "brief assessment",
+    "biasIndicators": "brief assessment",
+    "verificationStatus": "brief assessment"
+  },
+  "summary": "2-3 sentence overall summary",
+  "redFlags": ["list of concerning elements if any"],
+  "recommendations": ["suggested actions for verification"]
 }
 
-IMPORTANT RULES:
-1. If there are NO named sources, officials, or organizations → HIGH chance of fake news
-2. If claims are vague or unverifiable → Mark as suspicious
-3. If emotional/sensational language without facts → RED FLAG
-4. If no specific dates, locations, or verifiable details → RED FLAG
-5. Confidence should be HIGH (>0.80) when multiple red flags present
-6. Be STRICT - better to flag suspicious content than miss fake news
+IMPORTANT GUIDELINES:
+- Use "REAL" for content that appears legitimate with credible sources
+- Use "FAKE" for content with clear misinformation indicators
+- Use "UNCERTAIN" when there's insufficient evidence or mixed signals
+- Confidence should reflect how sure you are (0-100)
+- Be thorough but concise in your analysis
+- List specific red flags if found
+- Provide actionable recommendations
 
 Analyze now and respond ONLY with the JSON object:''';
   }
@@ -91,8 +96,8 @@ Analyze now and respond ONLY with the JSON object:''';
             'content': prompt,
           }
         ],
-        'temperature': 0.3, // Lower temperature for more consistent analysis
-        'max_tokens': 1000,
+        'temperature': 0.3,
+        'max_tokens': 1500,
       }),
     );
 
@@ -120,25 +125,63 @@ Analyze now and respond ONLY with the JSON object:''';
       }
       cleanedResponse = cleanedResponse.trim();
 
-      final json = jsonDecode(cleanedResponse);
+      // Extract JSON from the response (handle potential markdown code blocks)
+      final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(cleanedResponse);
+      if (jsonMatch == null) {
+        throw Exception('No JSON found in response');
+      }
+
+      final json = jsonDecode(jsonMatch.group(0)!);
+      
+      // Parse verdict to isFake boolean
+      final verdict = json['verdict'] as String;
+      final isFake = verdict.toUpperCase() == 'FAKE';
+      
+      // Convert confidence from 0-100 to 0-1
+      final confidence = (json['confidence'] as num).toDouble() / 100.0;
+      
+      // Parse detailed analysis
+      DetailedAnalysis? detailedAnalysis;
+      if (json['analysis'] != null) {
+        detailedAnalysis = DetailedAnalysis.fromJson(json['analysis']);
+      }
       
       return VerificationResult(
-        isFake: json['isFake'] ?? false,
-        confidence: (json['confidence'] ?? 0.5).toDouble(),
-        reasoning: json['reasoning'] ?? 'Analysis completed',
+        isFake: isFake,
+        confidence: confidence,
+        reasoning: json['summary'] ?? 'Analysis completed',
         redFlags: List<String>.from(json['redFlags'] ?? []),
-        sources: List<String>.from(json['sources'] ?? ['No sources identified']),
+        sources: [], // Not used in new format
+        detailedAnalysis: detailedAnalysis,
+        summary: json['summary'],
+        recommendations: json['recommendations'] != null 
+            ? List<String>.from(json['recommendations'])
+            : null,
       );
     } catch (e) {
       print('Failed to parse AI response: $e');
       print('Response was: $response');
-      // Return a cautious result if parsing fails
+      
+      // Return uncertain result if parsing fails
       return VerificationResult(
-        isFake: true,
-        confidence: 0.6,
-        reasoning: 'Unable to complete full analysis. Please verify with trusted sources.',
+        isFake: false,
+        confidence: 0.3, // Low confidence = uncertain
+        reasoning: 'Unable to complete full analysis. The response format was unexpected.',
         redFlags: ['Analysis parsing error - manual verification recommended'],
-        sources: ['No sources identified'],
+        sources: [],
+        detailedAnalysis: DetailedAnalysis(
+          sourceCredibility: 'Unable to analyze',
+          languageQuality: 'Unable to analyze',
+          factualConsistency: 'Unable to analyze',
+          biasIndicators: 'Unable to analyze',
+          verificationStatus: 'Pending manual verification',
+        ),
+        summary: 'Unable to complete full analysis. Please verify with trusted sources.',
+        recommendations: [
+          'Verify with established fact-checking websites',
+          'Cross-reference with multiple sources',
+          'Check the original source directly',
+        ],
       );
     }
   }
@@ -146,6 +189,7 @@ Analyze now and respond ONLY with the JSON object:''';
   VerificationResult _fallbackAnalysis(String title, String content) {
     final combinedText = '$title $content'.toLowerCase();
     final redFlags = <String>[];
+    final recommendations = <String>[];
     int suspicionScore = 0;
 
     // Check for sensational language
@@ -211,19 +255,43 @@ Analyze now and respond ONLY with the JSON object:''';
     final confidence = (suspicionScore / 100).clamp(0.0, 1.0);
     final isFake = suspicionScore >= 40;
 
+    // Generate recommendations
+    recommendations.addAll([
+      'Verify with established fact-checking websites',
+      'Cross-reference with multiple trusted news sources',
+      'Check the original source and publication date',
+    ]);
+
+    if (!hasSources) {
+      recommendations.add('Look for articles with named sources and citations');
+    }
+
     return VerificationResult(
       isFake: isFake,
       confidence: confidence,
       reasoning: isFake
           ? 'This article shows multiple indicators of potential misinformation. '
-              'It lacks credible sources and uses sensational language. '
-              'Please verify with trusted news sources.'
-          : 'This article appears to follow journalistic standards with proper sourcing. '
-              'However, always cross-reference important information with multiple trusted sources.',
-      redFlags: redFlags.isEmpty ? ['No major red flags detected'] : redFlags,
-      sources: hasSources
-          ? ['Article cites sources']
-          : ['No sources identified'],
+              'It lacks credible sources and uses sensational language.'
+          : 'This article appears to follow basic journalistic standards.',
+      redFlags: redFlags.isEmpty ? [] : redFlags,
+      sources: [],
+      detailedAnalysis: DetailedAnalysis(
+        sourceCredibility: hasSources 
+            ? 'Article cites some sources' 
+            : 'No credible sources identified',
+        languageQuality: suspicionScore > 30 
+            ? 'Contains sensational or emotional language' 
+            : 'Language appears neutral',
+        factualConsistency: 'Unable to verify without external sources',
+        biasIndicators: suspicionScore > 20 
+            ? 'Potential bias detected' 
+            : 'No obvious bias detected',
+        verificationStatus: 'Requires manual verification',
+      ),
+      summary: isFake
+          ? 'This article shows multiple indicators of potential misinformation. Please verify with trusted sources.'
+          : 'This article appears to follow basic journalistic standards. However, always cross-reference important information.',
+      recommendations: recommendations,
     );
   }
 }
