@@ -80,11 +80,13 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
     final newsProvider = Provider.of<NewsProvider>(context);
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         // Hero Section
         Container(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 Icons.shield_outlined,
@@ -180,15 +182,25 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
           child: Form(
             key: _formKey,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Use IndexedStack instead of TabBarView to avoid height issues
                 IndexedStack(
                   index: _currentTab,
                   children: [
-                    Column(children: _buildTextTab()),
-                    Column(children: _buildUrlTab()),
-                    Column(children: _buildImageTab()),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: _buildTextTab(),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: _buildUrlTab(),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: _buildImageTab(),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -386,30 +398,38 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
       ),
       const SizedBox(height: 16),
       if (_selectedImage != null)
-        Stack(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.file(
-                File(_selectedImage!.path),
-                height: 200,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: IconButton(
-                onPressed: _removeImage,
-                icon: const Icon(Icons.close),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.black54,
-                  foregroundColor: Colors.white,
+        ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxHeight: 200,
+            minHeight: 150,
+          ),
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: SizedBox(
+                  height: 200,
+                  width: double.infinity,
+                  child: Image.file(
+                    File(_selectedImage!.path),
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
-            ),
-          ],
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  onPressed: _removeImage,
+                  icon: const Icon(Icons.close),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
         )
       else
         OutlinedButton.icon(
