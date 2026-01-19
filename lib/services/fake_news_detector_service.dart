@@ -3,9 +3,8 @@ import 'package:http/http.dart' as http;
 import '../models/news_article.dart';
 
 class FakeNewsDetectorService {
-  static const String _baseUrl = 'https://openrouter.ai/api/v1/chat/completions';
-  // Using Mistral 7B Instruct (free) - confirmed working and stable
-  static const String _model = 'mistralai/mistral-7b-instruct:free';
+  // Using Google AI Studio API directly - more reliable and free
+  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
   
   String? _apiKey;
 
@@ -27,7 +26,7 @@ class FakeNewsDetectorService {
 
     try {
       final prompt = _buildPrompt(title, content, url, imageUrl);
-      final response = await _callOpenRouterAPI(prompt);
+      final response = await _callGeminiAPI(prompt);
       return _parseAIResponse(response);
     } catch (e) {
       print('AI Analysis failed: $e');
@@ -80,25 +79,26 @@ IMPORTANT GUIDELINES:
 Analyze now and respond ONLY with the JSON object:''';
   }
 
-  Future<String> _callOpenRouterAPI(String prompt) async {
+  Future<String> _callGeminiAPI(String prompt) async {
+    final url = '$_baseUrl?key=$_apiKey';
+    
     final response = await http.post(
-      Uri.parse(_baseUrl),
+      Uri.parse(url),
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_apiKey',
-        'HTTP-Referer': 'https://github.com/ashu13579/fake-news-detector-flutter',
-        'X-Title': 'Fake News Detector',
       },
       body: jsonEncode({
-        'model': _model,
-        'messages': [
+        'contents': [
           {
-            'role': 'user',
-            'content': prompt,
+            'parts': [
+              {'text': prompt}
+            ]
           }
         ],
-        'temperature': 0.3,
-        'max_tokens': 1500,
+        'generationConfig': {
+          'temperature': 0.3,
+          'maxOutputTokens': 2048,
+        }
       }),
     );
 
@@ -107,7 +107,13 @@ Analyze now and respond ONLY with the JSON object:''';
     }
 
     final data = jsonDecode(response.body);
-    final content = data['choices'][0]['message']['content'];
+    
+    // Extract text from Gemini API response format
+    if (data['candidates'] == null || data['candidates'].isEmpty) {
+      throw Exception('No response from Gemini API');
+    }
+    
+    final content = data['candidates'][0]['content']['parts'][0]['text'];
     return content;
   }
 
