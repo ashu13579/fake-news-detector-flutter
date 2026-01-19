@@ -58,6 +58,12 @@ class NewsArticle {
   }
 }
 
+enum NewsVerdict {
+  fake,      // High confidence fake news
+  real,      // High confidence real news
+  uncertain, // Low confidence or mixed signals
+}
+
 class VerificationResult {
   final bool isFake;
   final double confidence;
@@ -72,6 +78,43 @@ class VerificationResult {
     required this.redFlags,
     required this.sources,
   });
+
+  /// Get the verdict classification based on confidence and isFake flag
+  /// 
+  /// Logic:
+  /// - confidence < 0.50: UNCERTAIN (not enough evidence either way)
+  /// - confidence >= 0.50 && isFake == true: FAKE (likely fake news)
+  /// - confidence >= 0.50 && isFake == false: REAL (appears legitimate)
+  NewsVerdict get verdict {
+    if (confidence < 0.50) {
+      return NewsVerdict.uncertain;
+    }
+    return isFake ? NewsVerdict.fake : NewsVerdict.real;
+  }
+
+  /// Get a human-readable verdict label
+  String get verdictLabel {
+    switch (verdict) {
+      case NewsVerdict.fake:
+        return 'Likely Fake News';
+      case NewsVerdict.real:
+        return 'Appears Legitimate';
+      case NewsVerdict.uncertain:
+        return 'Uncertain';
+    }
+  }
+
+  /// Get a detailed verdict description
+  String get verdictDescription {
+    switch (verdict) {
+      case NewsVerdict.fake:
+        return 'This article shows strong indicators of misinformation';
+      case NewsVerdict.real:
+        return 'This article appears to follow journalistic standards';
+      case NewsVerdict.uncertain:
+        return 'This article appears to follow journalistic standards with proper sourcing. However, always cross-reference important information with multiple trusted sources.';
+    }
+  }
 
   Map<String, dynamic> toJson() {
     return {
