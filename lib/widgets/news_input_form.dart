@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'dart:convert';
 import '../providers/news_provider.dart';
 
 class NewsInputForm extends StatefulWidget {
@@ -21,7 +20,6 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
   final _imageUrlController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   XFile? _selectedImage;
-  String? _imageBase64;
   
   late TabController _tabController;
   int _currentTab = 0;
@@ -56,23 +54,11 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
     );
     
     if (image != null) {
-      // Convert image to base64
-      final bytes = await File(image.path).readAsBytes();
-      final base64Image = base64Encode(bytes);
-      
       setState(() {
         _selectedImage = image;
-        _imageBase64 = base64Image;
         _imageUrlController.clear();
       });
     }
-  }
-
-  void _removeImage() {
-    setState(() {
-      _selectedImage = null;
-      _imageBase64 = null;
-    });
   }
 
   @override
@@ -80,13 +66,11 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
     final newsProvider = Provider.of<NewsProvider>(context);
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
         // Hero Section
         Container(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 Icons.shield_outlined,
@@ -164,46 +148,20 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
 
         const SizedBox(height: 20),
 
-        // Form Content - Fixed with proper constraints
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+        // Tab Content
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Form(
             key: _formKey,
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Use IndexedStack instead of TabBarView to avoid height issues
-                IndexedStack(
-                  index: _currentTab,
-                  children: [
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: _buildTextTab(),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: _buildUrlTab(),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: _buildImageTab(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
+                // Tab Views
+                ..._buildTabContent(),
+
+                const SizedBox(height: 20),
+
+                // Analyze Button
                 FilledButton.icon(
                   onPressed: newsProvider.isLoading
                       ? null
@@ -220,7 +178,7 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
                       : const Icon(Icons.search_rounded),
                   label: Text(
                     newsProvider.isLoading
-                        ? 'Analyzing ${_getTabName()}...'
+                        ? 'Analyzing...'
                         : 'Analyze ${_getTabName()}',
                   ),
                   style: FilledButton.styleFrom(
@@ -229,11 +187,13 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                ),
+                ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.1, end: 0),
+
+                // Error Message
                 if (newsProvider.error != null) ...[
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.errorContainer,
                       borderRadius: BorderRadius.circular(12),
@@ -241,7 +201,7 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
                     child: Row(
                       children: [
                         Icon(
-                          Icons.error_outline,
+                          Icons.error_outline_rounded,
                           color: Theme.of(context).colorScheme.error,
                         ),
                         const SizedBox(width: 12),
@@ -255,14 +215,14 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
                         ),
                       ],
                     ),
-                  ),
+                  ).animate().shake(),
                 ],
+
+                const SizedBox(height: 20),
               ],
             ),
           ),
-        ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.1, end: 0),
-
-        const SizedBox(height: 20),
+        ),
       ],
     );
   }
@@ -271,11 +231,8 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-        ),
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -285,9 +242,9 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
               fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.primary,
+              fontSize: 11,
             ),
           ),
         ],
@@ -295,10 +252,23 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
     );
   }
 
+  List<Widget> _buildTabContent() {
+    switch (_currentTab) {
+      case 0:
+        return _buildTextTab();
+      case 1:
+        return _buildUrlTab();
+      case 2:
+        return _buildImageTab();
+      default:
+        return [];
+    }
+  }
+
   List<Widget> _buildTextTab() {
     return [
       Text(
-        'Enter the article details you want to verify...',
+        'Enter the article text you want to verify...',
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -308,7 +278,7 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
         controller: _titleController,
         decoration: const InputDecoration(
           labelText: 'Article Title',
-          hintText: 'Enter the headline',
+          hintText: 'Enter the headline or title',
           prefixIcon: Icon(Icons.title_rounded),
         ),
         validator: (value) {
@@ -323,7 +293,7 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
         controller: _contentController,
         decoration: const InputDecoration(
           labelText: 'Article Content',
-          hintText: 'Paste the article text here',
+          hintText: 'Paste the full article text here',
           prefixIcon: Icon(Icons.article_rounded),
           alignLabelWithHint: true,
         ),
@@ -398,44 +368,21 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
       ),
       const SizedBox(height: 16),
       if (_selectedImage != null)
-        ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxHeight: 200,
-            minHeight: 150,
-          ),
-          child: Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: SizedBox(
-                  height: 200,
-                  width: double.infinity,
-                  child: Image.file(
-                    File(_selectedImage!.path),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: IconButton(
-                  onPressed: _removeImage,
-                  icon: const Icon(Icons.close),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.black54,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+        Container(
+          height: 200,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            image: DecorationImage(
+              image: FileImage(File(_selectedImage!.path)),
+              fit: BoxFit.cover,
+            ),
           ),
         )
       else
         OutlinedButton.icon(
           onPressed: _pickImage,
           icon: const Icon(Icons.upload_file_rounded),
-          label: const Text('Upload Image from Gallery'),
+          label: const Text('Upload Image'),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 20),
             shape: RoundedRectangleBorder(
@@ -470,7 +417,6 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
           prefixIcon: Icon(Icons.link),
         ),
         keyboardType: TextInputType.url,
-        enabled: _selectedImage == null,
       ),
       const SizedBox(height: 16),
       TextFormField(
@@ -502,11 +448,13 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
     if (_formKey.currentState!.validate()) {
       String? imageUrl = _imageUrlController.text.isEmpty ? null : _imageUrlController.text;
       
-      // Use base64 image if local image is selected
-      if (_selectedImage != null && _imageBase64 != null) {
-        // For now, we'll use the image URL field to pass base64
-        // In a real implementation, you'd modify the API to accept base64
-        imageUrl = 'data:image/jpeg;base64,$_imageBase64';
+      if (_selectedImage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Note: Local image upload requires a server. Using URL analysis only.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
 
       // For URL tab, use URL as title if title is empty
@@ -519,16 +467,6 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
       
       if (_currentTab == 1 && content.isEmpty) {
         content = 'Article from: ${_urlController.text}';
-      }
-      
-      // For image tab, provide context
-      if (_currentTab == 2) {
-        if (title.isEmpty) {
-          title = 'Image Analysis';
-        }
-        if (content.isEmpty) {
-          content = 'Analyzing image for fake news indicators and manipulations.';
-        }
       }
 
       await newsProvider.analyzeNews(
