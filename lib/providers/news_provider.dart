@@ -35,7 +35,7 @@ class NewsProvider with ChangeNotifier {
         timestamp: DateTime.now(),
       );
 
-      final result = await _detectorService.analyzeNews(title, content, url: url, imageUrl: imageUrl);
+      final result = await _detectorService.analyzeNews(title, content, imageUrl: imageUrl);
       
       final verifiedArticle = article.copyWith(verificationResult: result);
       _articles.insert(0, verifiedArticle);
@@ -47,11 +47,6 @@ class NewsProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
-  }
-
-  void clearArticles() {
-    _articles.clear();
-    notifyListeners();
   }
 
   void clearHistory() {
