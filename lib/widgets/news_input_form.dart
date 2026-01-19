@@ -162,7 +162,7 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
 
         const SizedBox(height: 20),
 
-        // Form Content
+        // Form Content - Fixed with proper constraints
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
           padding: const EdgeInsets.all(20),
@@ -182,9 +182,9 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TabBarView(
-                  controller: _tabController,
-                  physics: const NeverScrollableScrollPhysics(),
+                // Use IndexedStack instead of TabBarView to avoid height issues
+                IndexedStack(
+                  index: _currentTab,
                   children: [
                     Column(children: _buildTextTab()),
                     Column(children: _buildUrlTab()),
@@ -388,14 +388,13 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
       if (_selectedImage != null)
         Stack(
           children: [
-            Container(
-              height: 200,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                image: DecorationImage(
-                  image: FileImage(File(_selectedImage!.path)),
-                  fit: BoxFit.cover,
-                ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.file(
+                File(_selectedImage!.path),
+                height: 200,
+                width: double.infinity,
+                fit: BoxFit.cover,
               ),
             ),
             Positioned(
