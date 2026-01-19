@@ -27,18 +27,20 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
       return const SizedBox.shrink();
     }
 
+    final verdict = result!.verdict;
+
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _getBackgroundColor(),
+        color: _getBackgroundColor(verdict),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _getBorderColor(),
+          color: _getBorderColor(verdict),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: _getBorderColor().withOpacity(0.3),
+            color: _getBorderColor(verdict).withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -53,8 +55,8 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
             child: Row(
               children: [
                 Icon(
-                  _getIcon(),
-                  color: _getIconColor(),
+                  _getIcon(verdict),
+                  color: _getIconColor(verdict),
                   size: 32,
                 ),
                 const SizedBox(width: 12),
@@ -63,16 +65,16 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _getVerdict(),
+                        result!.verdictLabel,
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: _getIconColor(),
+                              color: _getIconColor(verdict),
                               fontWeight: FontWeight.bold,
                             ),
                       ),
                       Text(
                         'Confidence: ${(result!.confidence * 100).toStringAsFixed(0)}%',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: _getIconColor().withOpacity(0.8),
+                              color: _getIconColor(verdict).withOpacity(0.8),
                             ),
                       ),
                     ],
@@ -87,7 +89,7 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
                   child: Text(
                     '${(result!.confidence * 100).toStringAsFixed(0)}%',
                     style: TextStyle(
-                      color: _getIconColor(),
+                      color: _getIconColor(verdict),
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -96,7 +98,7 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
                 IconButton(
                   icon: const Icon(Icons.close_rounded),
                   onPressed: widget.onClose,
-                  color: _getIconColor(),
+                  color: _getIconColor(verdict),
                 ),
               ],
             ),
@@ -111,7 +113,7 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
                 value: result!.confidence,
                 minHeight: 8,
                 backgroundColor: Colors.white.withOpacity(0.3),
-                valueColor: AlwaysStoppedAnimation<Color>(_getIconColor()),
+                valueColor: AlwaysStoppedAnimation<Color>(_getIconColor(verdict)),
               ),
             ),
           ),
@@ -133,7 +135,7 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
           const SizedBox(height: 16),
 
           // Red flags section
-          if (result!.redFlags.isNotEmpty) ...[
+          if (result!.redFlags.isNotEmpty && result!.redFlags.first != 'No major red flags detected') ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -230,7 +232,7 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
                     const SizedBox(height: 12),
                     _buildDetailRow('Source URL', widget.article.url!),
                   ],
-                  if (result!.sources.isNotEmpty) ...[
+                  if (result!.sources.isNotEmpty && result!.sources.first != 'No sources identified' && result!.sources.first != 'No credible sources identified') ...[
                     const SizedBox(height: 12),
                     _buildDetailRow('Sources', result!.sources.join(', ')),
                   ],
@@ -265,53 +267,47 @@ class _AnalysisResultCardState extends State<AnalysisResultCard> {
     );
   }
 
-  Color _getBackgroundColor() {
-    if (result!.isFake) {
-      return const Color(0xFF8B2635); // Dark red
-    } else if (result!.confidence < 0.7) {
-      return const Color(0xFF8B6F2B); // Dark orange/yellow
-    } else {
-      return const Color(0xFF2B5F3F); // Dark green
+  Color _getBackgroundColor(NewsVerdict verdict) {
+    switch (verdict) {
+      case NewsVerdict.fake:
+        return const Color(0xFF8B2635); // Dark red
+      case NewsVerdict.uncertain:
+        return const Color(0xFF8B6F2B); // Dark orange/yellow
+      case NewsVerdict.real:
+        return const Color(0xFF2B5F3F); // Dark green
     }
   }
 
-  Color _getBorderColor() {
-    if (result!.isFake) {
-      return Colors.red.shade400;
-    } else if (result!.confidence < 0.7) {
-      return Colors.orange.shade400;
-    } else {
-      return Colors.green.shade400;
+  Color _getBorderColor(NewsVerdict verdict) {
+    switch (verdict) {
+      case NewsVerdict.fake:
+        return Colors.red.shade400;
+      case NewsVerdict.uncertain:
+        return Colors.orange.shade400;
+      case NewsVerdict.real:
+        return Colors.green.shade400;
     }
   }
 
-  Color _getIconColor() {
-    if (result!.isFake) {
-      return Colors.red.shade300;
-    } else if (result!.confidence < 0.7) {
-      return Colors.orange.shade300;
-    } else {
-      return Colors.green.shade300;
+  Color _getIconColor(NewsVerdict verdict) {
+    switch (verdict) {
+      case NewsVerdict.fake:
+        return Colors.red.shade300;
+      case NewsVerdict.uncertain:
+        return Colors.orange.shade300;
+      case NewsVerdict.real:
+        return Colors.green.shade300;
     }
   }
 
-  IconData _getIcon() {
-    if (result!.isFake) {
-      return Icons.cancel_rounded;
-    } else if (result!.confidence < 0.7) {
-      return Icons.warning_rounded;
-    } else {
-      return Icons.check_circle_rounded;
-    }
-  }
-
-  String _getVerdict() {
-    if (result!.isFake) {
-      return 'Fake News';
-    } else if (result!.confidence < 0.7) {
-      return 'Uncertain';
-    } else {
-      return 'Likely Real';
+  IconData _getIcon(NewsVerdict verdict) {
+    switch (verdict) {
+      case NewsVerdict.fake:
+        return Icons.cancel_rounded;
+      case NewsVerdict.uncertain:
+        return Icons.help_outline_rounded;
+      case NewsVerdict.real:
+        return Icons.check_circle_rounded;
     }
   }
 
