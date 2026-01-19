@@ -4,8 +4,8 @@ import '../models/news_article.dart';
 
 class FakeNewsDetectorService {
   // Using Google AI Studio API directly - more reliable and free
-  // Model name must be exact - using gemini-1.5-flash-latest for stability
-  static const String _model = 'gemini-1.5-flash-latest';
+  // Correct model name: gemini-1.5-flash (NOT gemini-1.5-flash-latest)
+  static const String _model = 'gemini-1.5-flash';
   static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
   
   String? _apiKey;
