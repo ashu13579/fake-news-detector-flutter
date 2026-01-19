@@ -14,6 +14,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final newsProvider = Provider.of<NewsProvider>(context);
@@ -37,21 +45,30 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _buildAppBar(newsProvider),
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      const NewsInputForm(),
-                      
-                      // Show result inline if analysis is complete
-                      if (newsProvider.articles.isNotEmpty && !newsProvider.isLoading)
-                        AnalysisResultCard(
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: const NewsInputForm(),
+                    ),
+                    
+                    // Show result inline if analysis is complete
+                    if (newsProvider.articles.isNotEmpty && !newsProvider.isLoading)
+                      SliverToBoxAdapter(
+                        child: AnalysisResultCard(
                           article: newsProvider.articles.first,
                           onClose: () {
-                            // Optional: Clear the result or navigate
+                            newsProvider.clearArticles();
                           },
                         ),
-                    ],
-                  ),
+                      ),
+                    
+                    // Add bottom padding
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 20),
+                    ),
+                  ],
                 ),
               ),
             ],
