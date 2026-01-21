@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:convert';
 import 'dart:io';
 import '../providers/news_provider.dart';
 
@@ -444,20 +445,45 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
     }
   }
 
+  String? _getMimeType(String path) {
+    final extension = path.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return null;
+    }
+  }
+
   Future<void> _analyzeNews(NewsProvider newsProvider) async {
     if (_formKey.currentState!.validate()) {
       String? imageUrl = _imageUrlController.text.isEmpty ? null : _imageUrlController.text;
-      
+
       if (_selectedImage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Note: Local image upload requires a server. Using URL analysis only.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        final imageBytes = await _selectedImage!.readAsBytes();
+        final base64Image = base64Encode(imageBytes);
+        final mimeType = _getMimeType(_selectedImage!.path);
+
+        if (mimeType != null) {
+          imageUrl = 'data:$mimeType;base64,$base64Image';
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Unsupported image format. Please use JPEG, PNG, GIF, or WebP.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
       }
 
-      // For URL tab, use URL as title if title is empty
       String title = _titleController.text;
       String content = _contentController.text;
       
@@ -477,8 +503,6 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
       );
 
       if (mounted && newsProvider.error == null) {
-        // Don't clear form - keep it visible above results
-        // Scroll to show results
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
