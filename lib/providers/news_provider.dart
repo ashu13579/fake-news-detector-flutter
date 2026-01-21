@@ -49,6 +49,11 @@ class NewsProvider with ChangeNotifier {
     }
   }
 
+  void clearAnalysis() {
+    _articles.clear();
+    notifyListeners();
+  }
+
   void clearHistory() {
     _articles.clear();
     notifyListeners();

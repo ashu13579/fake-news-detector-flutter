@@ -62,6 +62,13 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
     }
   }
 
+  void _clearSelectedImage() {
+    setState(() {
+      _selectedImage = null;
+      Provider.of<NewsProvider>(context, listen: false).clearAnalysis();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final newsProvider = Provider.of<NewsProvider>(context);
@@ -369,15 +376,31 @@ class _NewsInputFormState extends State<NewsInputForm> with SingleTickerProvider
       ),
       const SizedBox(height: 16),
       if (_selectedImage != null)
-        Container(
-          height: 200,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            image: DecorationImage(
-              image: FileImage(File(_selectedImage!.path)),
-              fit: BoxFit.cover,
+        Stack(
+          children: [
+            Container(
+              height: 200,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                image: DecorationImage(
+                  image: FileImage(File(_selectedImage!.path)),
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
-          ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                onPressed: _clearSelectedImage,
+                icon: const Icon(Icons.close_rounded),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withOpacity(0.5),
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
         )
       else
         OutlinedButton.icon(
